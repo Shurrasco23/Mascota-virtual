@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascota virtual</title>
+<style>
+:root{--wall:#e0ebe2;--floor:#aec3b4;--ink:#3d5247;--pet:#d9a066;--petd:#b97f45;--card:#f6faf6;--bar:#5f7b6d}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#c9d9cd;font-family:"Trebuchet MS",Verdana,sans-serif;color:var(--ink)}
+.app{width:min(400px,100%);height:min(720px,100vh);background:var(--wall);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.stats{display:grid;gap:8px;padding:14px 16px;background:var(--card);border-bottom:3px solid var(--floor)}
+.stat{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:8px;font-size:14px}
+.track{height:12px;background:#dbe6dd;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:var(--bar);border-radius:6px;transition:width .5s,background .5s}
+.fill.low{background:#c0705a}
+.room{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center}
+.room::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--floor)}
+.bubble{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:80%;background:#fff;padding:10px 14px;border-radius:16px;font-size:15px;text-align:center;line-height:1.35;z-index:2}
+.bubble::after{content:"";position:absolute;bottom:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-bottom:0;border-top-color:#fff}
+#pet{width:230px;z-index:1;margin-bottom:12%;cursor:pointer;animation:bob 3s ease-in-out infinite;touch-action:manipulation}
+@keyframes bob{50%{transform:translateY(-6px) scale(1.015,.985)}}
+#pet.bounce{animation:hop .5s}
+@keyframes hop{40%{transform:translateY(-30px)}}
+.eyes{animation:blink 5s infinite;transform-origin:center 118px}
+@keyframes blink{96%,100%{transform:scaleY(1)}98%{transform:scaleY(.1)}}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;background:var(--card);border-top:3px solid var(--floor)}
+button{font:inherit;font-size:15px;padding:12px 4px;border:0;border-radius:14px;background:var(--bar);color:#fff;cursor:pointer}
+button:hover{background:#4c6559}
+button:focus-visible,#pet:focus-visible{outline:3px solid #e2a13b;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){#pet,.eyes{animation:none}}
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="stats" aria-label="Estado de la mascota">
+    <div class="stat"><span>Alimentación</span><div class="track"><div class="fill" id="b-food"></div></div><span id="v-food"></span></div>
+    <div class="stat"><span>Diversión</span><div class="track"><div class="fill" id="b-fun"></div></div><span id="v-fun"></span></div>
+    <div class="stat"><span>Presencia</span><div class="track"><div class="fill" id="b-presence"></div></div><span id="v-presence"></span></div>
+  </section>
+  <section class="room">
+    <div class="bubble" id="bubble" role="status"></div>
+    <svg id="pet" viewBox="0 0 200 200" tabindex="0" role="img" aria-label="Tu mascota">
+      <ellipse cx="100" cy="188" rx="62" ry="8" fill="#000" opacity=".12"/>
+      <path d="M100 22C70 22 40 80 34 130c-5 42 28 56 66 56s71-14 66-56C160 80 130 22 100 22Z" fill="var(--pet)" stroke="var(--petd)" stroke-width="3"/>
+      <g class="eyes">
+        <ellipse cx="76" cy="112" rx="15" ry="18" fill="#fff"/><ellipse cx="124" cy="112" rx="15" ry="18" fill="#fff"/>
+        <circle id="pl" cx="78" cy="114" r="7" fill="#222"/><circle id="pr" cx="122" cy="114" r="7" fill="#222"/>
+      </g>
+      <path id="brow" d="" fill="none" stroke="var(--petd)" stroke-width="4" stroke-linecap="round"/>
+      <path id="mouth" d="" fill="none" stroke="#5a3a1e" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </section>
+  <section class="actions">
+    <button id="feed">Alimentar</button>
+    <button id="play">Jugar</button>
+    <button id="stay">Acompañar</button>
+  </section>
+</main>
+<script>
+// --- Estado y memoria (Fase 2: reemplazar localStorage por el backend en Python) ---
+const KEY = "mascota_v1";
+const $ = id => document.getElementById(id);
+const clamp = v => Math.max(0, Math.min(100, v));
+let s = { food: 70, fun: 70, presence: 70, visits: [], last: Date.now() };
+try { Object.assign(s, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+
+const MOODS = {
+  feliz:    { mouth: "M72 150Q100 178 128 150", brow: "" },
+  normal:   { mouth: "M78 156Q100 160 122 156", brow: "" },
+  triste:   { mouth: "M76 164Q100 144 124 164", brow: "M58 88Q72 82 90 92 M110 92Q128 82 142 88" },
+  abandonada:{ mouth: "M80 168Q100 148 120 168", brow: "M58 94Q74 80 90 88 M110 88Q126 80 142 94" }
+};
+const mood = () => {
+  const m = (s.food + s.fun + s.presence) / 3;
+  return m > 66 ? "feliz" : m > 42 ? "normal" : m > 20 ? "triste" : "abandonada";
+};
+
+// Punto de conexión con el agente de IA (Fase 2): recibe evento + estado, devuelve texto.
+function decirAlgo(evento) {
+  const frases = {
+    feliz: ["¡Qué bien se está contigo!", "Hoy es un buen día.", "Me encanta cuando estás aquí."],
+    normal: ["Aquí estoy, tranquila.", "¿Qué hacemos?", "Todo bien por acá."],
+    triste: ["Me sentía un poco sola...", "Ya te extrañaba.", "Tengo un poco de hambre."],
+    abandonada: ["Pensé que no volverías...", "Estuve mucho tiempo sola.", "No me dejes tanto rato."]
+  };
+  const extra = { feed: "¡Gracias por la comida!", play: "¡Otra vez, otra vez!", stay: "Me gusta que te quedes." };
+  if (extra[evento]) return extra[evento];
+  const f = frases[mood()];
+  return f[Math.floor(Math.random() * f.length)];
+}
+const say = evento => { $("bubble").textContent = decirAlgo(evento); };
+
+function render() {
+  for (const k of ["food", "fun", "presence"]) {
+    const v = Math.round(s[k]);
+    $("b-" + k).style.width = v + "%";
+    $("b-" + k).classList.toggle("low", v < 30);
+    $("v-" + k).textContent = v;
+  }
+  const m = MOODS[mood()];
+  $("mouth").setAttribute("d", m.mouth);
+  $("brow").setAttribute("d", m.brow);
+  localStorage.setItem(KEY, JSON.stringify({ ...s, last: Date.now() }));
+}
+function act(evento, changes) {
+  for (const k in changes) s[k] = clamp(s[k] + changes[k]);
+  s.presence = clamp(s.presence + 4); // cada interacción cuenta como presencia
+  $("pet").classList.remove("bounce"); void $("pet").offsetWidth; $("pet").classList.add("bounce");
+  render(); say(evento);
+}
+$("feed").onclick = () => act("feed", { food: 25 });
+$("play").onclick = () => act("play", { fun: 25, food: -5 });
+$("stay").onclick = () => act("stay", { presence: 20 });
+$("pet").onclick = () => act("stay", { presence: 3 });
+
+// --- Al abrir: la mascota nota cuánto tiempo estuvo sola ---
+const now = Date.now();
+const mins = (now - s.last) / 60000;
+s.visits = [...s.visits.filter(t => now - t < 864e5), now];   // visitas de las últimas 24 h
+s.food = clamp(s.food - mins * 0.5); s.fun = clamp(s.fun - mins * 0.4); s.presence = clamp(s.presence - mins * 0.6);
+render();
+$("bubble").textContent = mins > 30 ? `Estuve ${Math.round(mins)} min sola...` : s.visits.length > 3 ? "¡Otra vez por aquí, qué bien!" : decirAlgo();
+
+// Los valores bajan con el tiempo mientras la página está abierta
+setInterval(() => { s.food = clamp(s.food - 1); s.fun = clamp(s.fun - 1); s.presence = clamp(s.presence - 1.5); render(); }, 10000);
+// Los ojos siguen el cursor
+document.addEventListener("pointermove", e => {
+  const r = $("pet").getBoundingClientRect();
+  const dx = Math.max(-1, Math.min(1, (e.clientX - r.left - r.width / 2) / 200));
+  const dy = Math.max(-1, Math.min(1, (e.clientY - r.top - r.height / 2) / 200));
+  $("pl").setAttribute("cx", 78 + dx * 6); $("pr").setAttribute("cx", 122 + dx * 6);
+  $("pl").setAttribute("cy", 114 + dy * 6); $("pr").setAttribute("cy", 114 + dy * 6);
+});
+</script>
+</body>
+</html>
