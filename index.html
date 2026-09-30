@@ -29,6 +29,21 @@
   button:hover{background:#4c6559}
   button:focus-visible,#pet:focus-visible{outline:3px solid #e2a13b;outline-offset:2px}
   @media(prefers-reduced-motion:reduce){#pet,.eyes{animation:none}}
+  .modal {
+  position: absolute; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5); display: grid; place-items: center; z-index: 10;
+}
+.modal-content {
+  background: var(--card); width: 90%; max-height: 80%;
+  border-radius: 16px; padding: 16px; border: 3px solid var(--floor);
+  overflow-y: auto;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.shop-grid { display: grid; gap: 10px; }
+.shop-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--wall); padding: 10px; border-radius: 10px;
+}
 </style>
 </head>
 <body>
@@ -80,17 +95,61 @@
   <section class="actions">
     <button id="feed">Alimentar ($10)</button>
     <button id="play">Jugar ($5)</button>
+    <button id="open-shop" style="background:#b97f45">🏬 Tienda</button>
+    <button id="open-inventory">🎒 Inventario</button>
     <button id="stay">Acompañar (Gratis)</button>
     <button id="work" style="background:#4c6559">+15 Monedas</button>
   </section>
 </main>
+
+<div id="shop-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🏬 Tienda de Objetos</h3>
+      <button id="close-shop">✖</button>
+    </div>
+    <div id="shop-items" class="shop-grid">
+      <!-- Los objetos se generarán dinámicamente con JavaScript -->
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEL INVENTARIO -->
+<div id="inventory-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🎒 Tu Inventario</h3>
+      <button id="close-inventory">✖</button>
+    </div>
+    <div id="inventory-items" class="shop-grid">
+      <!-- Los ítems comprados se mostrarán aquí con JS -->
+    </div>
+  </div>
+</div>
 
 <script>
 // --- Estado y memoria (Fase 2: reemplazar localStorage por el backend en Python) ---
 const KEY = "mascota_v1";
 const $ = id => document.getElementById(id);
 const clamp = v => Math.max(0, Math.min(100, v));
-let s = { food: 70, fun: 70, presence: 70, coins: 50, visits: [], last: Date.now() };
+
+// Catálogo de ítems disponibles en la tienda
+const TIENDA = {
+  manzana: { nombre: "🍎 Manzana", costo: 10, efectos: { food: 15 }, desc: "+15 Hambre" },
+  pizza:   { nombre: "🍕 Pizza", costo: 25, efectos: { food: 40, fun: 5 }, desc: "+40 Hambre, +5 Diversión" },
+  pelota:  { nombre: "⚽ Pelota", costo: 15, efectos: { fun: 30 }, desc: "+30 Diversión" },
+  pocion:  { nombre: "🧪 Poción", costo: 40, efectos: { food: 30, fun: 30, presence: 30 }, desc: "+30 Todo" }
+};
+
+let s = { 
+  food: 70, 
+  fun: 70, 
+  presence: 70, 
+  coins: 50,
+  inventory: { manzana: 1, pelota: 1 }, // Ítems que ya posee el usuario 
+  visits: [], 
+  last: Date.now() 
+};
 try { Object.assign(s, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
 
 const MOODS = {
@@ -156,6 +215,120 @@ $("work").onclick = () => {
   render();
   $("bubble").textContent = "¡Ganaste 15 monedas trabajando!";
 };
+
+// Abrir y cerrar modal
+$("open-shop").onclick = () => { renderTienda(); $("shop-modal").style.display = "grid"; };
+$("close-shop").onclick = () => { $("shop-modal").style.display = "none"; };
+
+// Renderizar lista de productos en la tienda
+function renderTienda() {
+  const container = $("shop-items");
+  container.innerHTML = "";
+
+  for (const id in TIENDA) {
+    const item = TIENDA[id];
+    const div = document.createElement("div");
+    div.className = "shop-item";
+    div.innerHTML = `
+      <div>
+        <strong>${item.nombre}</strong> <br>
+        <small>${item.desc}</small>
+      </div>
+      <button onclick="comprarItem('${id}')">🪙 ${item.costo}</button>
+    `;
+    container.appendChild(div);
+  }
+}
+
+// Función para comprar
+function comprarItem(id) {
+  const item = TIENDA[id];
+  if (s.coins < item.costo) {
+    alert("¡No tienes suficientes monedas!");
+    return;
+  }
+  s.coins -= item.costo;
+  s.inventory[id] = (s.inventory[id] || 0) + 1; // Añadir al inventario
+  render();
+  renderTienda();
+  $("bubble").textContent = `¡Compraste ${item.nombre}!`;
+}
+
+// Función para usar un ítem del inventario
+function usarItem(id) {
+  if (!s.inventory[id] || s.inventory[id] <= 0) return;
+  
+  const item = TIENDA[id];
+  s.inventory[id]--; // Descontar 1 del inventario
+  
+  // Aplicar efectos a las estadísticas de la mascota
+  for (const stat in item.efectos) {
+    s[stat] = clamp(s[stat] + item.efectos[stat]);
+  }
+  
+  render();
+  $("bubble").textContent = `¡Usaste ${item.nombre}!`;
+}
+
+// 1. Abrir y cerrar el modal del Inventario
+$("open-inventory").onclick = () => { 
+  renderInventario(); 
+  $("inventory-modal").style.display = "grid"; 
+};
+$("close-inventory").onclick = () => { 
+  $("inventory-modal").style.display = "none"; 
+};
+
+// 2. Función para mostrar lo que tienes guardado en la mochila
+function renderInventario() {
+  const container = $("inventory-items");
+  container.innerHTML = "";
+  let hayObjetos = false;
+
+  for (const id in s.inventory) {
+    const cantidad = s.inventory[id];
+    
+    // Solo mostramos los ítems si la cantidad es mayor a 0
+    if (cantidad > 0) {
+      hayObjetos = true;
+      const item = TIENDA[id];
+      const div = document.createElement("div");
+      div.className = "shop-item";
+      div.innerHTML = `
+        <div>
+          <strong>${item.nombre}</strong> (x${cantidad})<br>
+          <small>${item.desc}</small>
+        </div>
+        <button style="background:#4c6559" onclick="usarItem('${id}')">Usar</button>
+      `;
+      container.appendChild(div);
+    }
+  }
+
+  // Si no hay nada en la mochila:
+  if (!hayObjetos) {
+    container.innerHTML = "<p style='text-align:center; opacity: 0.7;'>Tu inventario está vacío. ¡Ve a la tienda a comprar algo!</p>";
+  }
+}
+
+// 3. Función para consumir/usar un ítem
+function usarItem(id) {
+  if (!s.inventory[id] || s.inventory[id] <= 0) return;
+
+  const item = TIENDA[id];
+  s.inventory[id]--; // Restamos 1 a la cantidad del inventario
+
+  // Aplicamos los efectos del ítem a las estadísticas de la mascota
+  for (const stat in item.efectos) {
+    if (s[stat] !== undefined) {
+      s[stat] = clamp(s[stat] + item.efectos[stat]);
+    }
+  }
+
+  render();            // Actualiza la pantalla y las barras principales
+  renderInventario();  // Actualiza la lista dentro del inventario
+  $("bubble").textContent = `¡Usaste ${item.nombre}!`;
+}
 
 $("feed").onclick = () => act("feed", { food: 25 }, 10);
 $("play").onclick = () => act("play", { fun: 25, food: -5 }, 5);

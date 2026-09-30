@@ -22,9 +22,25 @@ class Estado:
 
 
 @dataclass
+class Item:
+    nombre: str
+    precio: int
+    efecto_alimentacion: float = 0
+    efecto_diversion: float = 0
+    efecto_presencia: float = 0
+
+# Catálogo global en el backend
+TIENDA = {
+    "manzana": Item("Manzana", precio=10, efecto_alimentacion=15),
+    "pizza": Item("Pizza", precio=25, efecto_alimentacion=40, efecto_diversion=5),
+    "pelota": Item("Pelota", precio=15, efecto_diversion=30),
+}
+
+@dataclass
 class Mascota:
     nombre: str = "Mascota"
     monedas: int = 50  # Monedas iniciales
+    inventario: dict = field(default_factory=lambda: {"manzana": 1})
     estado: Estado = field(default_factory=Estado)
     ultima_visita: float = field(default_factory=time)
     historial: list = field(default_factory=list)  # memoria de interacciones (usar en Fase 2 con la IA)
@@ -57,6 +73,28 @@ class Mascota:
 
     def ganar_monedas(self, cantidad: int):
         self.monedas += cantidad
+
+    def comprar_item(self, id_item: str) -> bool:
+        if id_item not in TIENDA:
+            return False
+        item = TIENDA[id_item]
+        if self.monedas >= item.precio:
+            self.monedas -= item.precio
+            self.inventario[id_item] = self.inventario.get(id_item, 0) + 1
+            return True
+        return False
+
+    def usar_item(self, id_item: str) -> bool:
+        if self.inventario.get(id_item, 0) > 0:
+            item = TIENDA[id_item]
+            self.inventario[id_item] -= 1
+            self.estado.cambiar(
+                alimentacion=item.efecto_alimentacion,
+                diversion=item.efecto_diversion,
+                presencia=item.efecto_presencia
+            )
+            return True
+        return False
 
     def acompanar(self):
         self.estado.cambiar(presencia=20)

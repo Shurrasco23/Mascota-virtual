@@ -4,9 +4,9 @@ Proyecto desarrollado para la asignatura **Tópicos C**.
 
 ## Integrantes
 
-* **Guillermo Vargas**
-
 * **Alejandro Carrasco**
+
+* **Guillermo Vargas**
 
 ## Descripción y Alcance
 
@@ -44,6 +44,10 @@ Actualmente el proyecto cuenta con dos componentes principales estructurados:
 
   * Persistencia local ligera mediante `localStorage`.
 
+* **Sistema de Tienda e Inventario (Modales):**
+  * Ventana emergente (Modal) de **Tienda** para catálogo de ítems con costos y descripción de efectos.
+  * Ventana emergente de **Inventario/Mochila** para almacenar los objetos comprados y consumirlos cuando el jugador decida.
+
 ### 2. Modelo de Dominio (`mascota.py`)
 
 * **Programación Orientada a Objetos (POO):**
@@ -52,10 +56,14 @@ Actualmente el proyecto cuenta con dos componentes principales estructurados:
 
   * Clase `Mascota`: Define la entidad principal, calculando el estado de ánimo, descontando recursos según acciones y registrando un historial de interacciones con marca de tiempo.
 
+* **Catálogo y Gestión de Inventario:**
+  * Estructura de `Item` y diccionario de catálogo `TIENDA`.
+  * Métodos `comprar_item()` y `usar_item()` en la clase `Mascota` para control de saldo y bolsa de objetos.
+
 ##  Próximos Pasos (Fase 2)
 
 1. **Conexión Frontend-Backend:** Crear un servidor de API RESTful (utilizando *FastAPI* o *Flask*) para conectar `index.html` con `mascota.py`.
 
 2. **Minijuegos:** Reemplazar la ganancia directa de dinero por minijuegos interactivos en HTML5 Canvas.
 
-3. **Tienda e Inventario:** Implementar la compra y uso de ítems específicos (alimentos premium, juguetes) almacenados en un inventario.
+3. **Animaciones de Ítems:** Añadir animaciones o feedback visual al consumir objetos del inventario.
