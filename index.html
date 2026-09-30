@@ -5,39 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mascota virtual</title>
 <style>
-:root{--wall:#e0ebe2;--floor:#aec3b4;--ink:#3d5247;--pet:#d9a066;--petd:#b97f45;--card:#f6faf6;--bar:#5f7b6d}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#c9d9cd;font-family:"Trebuchet MS",Verdana,sans-serif;color:var(--ink)}
-.app{width:min(400px,100%);height:min(720px,100vh);background:var(--wall);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.stats{display:grid;gap:8px;padding:14px 16px;background:var(--card);border-bottom:3px solid var(--floor)}
-.stat{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:8px;font-size:14px}
-.track{height:12px;background:#dbe6dd;border-radius:6px;overflow:hidden}
-.fill{height:100%;background:var(--bar);border-radius:6px;transition:width .5s,background .5s}
-.fill.low{background:#c0705a}
-.room{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center}
-.room::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--floor)}
-.bubble{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:80%;background:#fff;padding:10px 14px;border-radius:16px;font-size:15px;text-align:center;line-height:1.35;z-index:2}
-.bubble::after{content:"";position:absolute;bottom:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-bottom:0;border-top-color:#fff}
-#pet{width:230px;z-index:1;margin-bottom:12%;cursor:pointer;animation:bob 3s ease-in-out infinite;touch-action:manipulation}
-@keyframes bob{50%{transform:translateY(-6px) scale(1.015,.985)}}
-#pet.bounce{animation:hop .5s}
-@keyframes hop{40%{transform:translateY(-30px)}}
-.eyes{animation:blink 5s infinite;transform-origin:center 118px}
-@keyframes blink{96%,100%{transform:scaleY(1)}98%{transform:scaleY(.1)}}
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;background:var(--card);border-top:3px solid var(--floor)}
-button{font:inherit;font-size:15px;padding:12px 4px;border:0;border-radius:14px;background:var(--bar);color:#fff;cursor:pointer}
-button:hover{background:#4c6559}
-button:focus-visible,#pet:focus-visible{outline:3px solid #e2a13b;outline-offset:2px}
-@media(prefers-reduced-motion:reduce){#pet,.eyes{animation:none}}
+  :root{--wall:#e0ebe2;--floor:#aec3b4;--ink:#3d5247;--pet:#d9a066;--petd:#b97f45;--card:#f6faf6;--bar:#5f7b6d}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#c9d9cd;font-family:"Trebuchet MS",Verdana,sans-serif;color:var(--ink)}
+  .app{width:min(400px,100%);height:min(720px,100vh);background:var(--wall);display:flex;flex-direction:column;overflow:hidden;position:relative}
+  .stats{display:grid;gap:8px;padding:14px 16px;background:var(--card);border-bottom:3px solid var(--floor)}
+  .stat{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:8px;font-size:14px}
+  .track{height:12px;background:#dbe6dd;border-radius:6px;overflow:hidden}
+  .fill{height:100%;background:var(--bar);border-radius:6px;transition:width .5s,background .5s}
+  .fill.low{background:#c0705a}
+  .room{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center}
+  .room::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--floor)}
+  .bubble{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:80%;background:#fff;padding:10px 14px;border-radius:16px;font-size:15px;text-align:center;line-height:1.35;z-index:2}
+  .bubble::after{content:"";position:absolute;bottom:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-bottom:0;border-top-color:#fff}
+  #pet{width:230px;z-index:1;margin-bottom:12%;cursor:pointer;animation:bob 3s ease-in-out infinite;touch-action:manipulation}
+  @keyframes bob{50%{transform:translateY(-6px) scale(1.015,.985)}}
+  #pet.bounce{animation:hop .5s}
+  @keyframes hop{40%{transform:translateY(-30px)}}
+  .eyes{animation:blink 5s infinite;transform-origin:center 118px}
+  @keyframes blink{96%,100%{transform:scaleY(1)}98%{transform:scaleY(.1)}}
+  .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;background:var(--card);border-top:3px solid var(--floor)}
+  button{font:inherit;font-size:15px;padding:12px 4px;border:0;border-radius:14px;background:var(--bar);color:#fff;cursor:pointer}
+  button:hover{background:#4c6559}
+  button:focus-visible,#pet:focus-visible{outline:3px solid #e2a13b;outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){#pet,.eyes{animation:none}}
 </style>
 </head>
 <body>
 <main class="app">
   <section class="stats" aria-label="Estado de la mascota">
-    <div class="stat"><span>Alimentación</span><div class="track"><div class="fill" id="b-food"></div></div><span id="v-food"></span></div>
-    <div class="stat"><span>Diversión</span><div class="track"><div class="fill" id="b-fun"></div></div><span id="v-fun"></span></div>
-    <div class="stat"><span>Presencia</span><div class="track"><div class="fill" id="b-presence"></div></div><span id="v-presence"></span></div>
+  
+    <!-- Fila para el contador de monedas -->
+    <div class="stat">
+      <span>Monedas</span>
+      <div></div> <!-- Espacio vacío para respetar las 3 columnas de la cuadrícula CSS -->
+      <span id="v-coins" style="font-weight: bold; color: #b97f45; white-space: nowrap;">🪙 50</span>
+    </div>
+
+    <!-- Estadísticas con barra de progreso -->
+    <div class="stat">
+      <span>Alimentación</span>
+      <div class="track"><div class="fill" id="b-food"></div></div>
+      <span id="v-food"></span>
+    </div>
+
+    <div class="stat">
+      <span>Diversión</span>
+      <div class="track"><div class="fill" id="b-fun"></div></div>
+      <span id="v-fun"></span>
+    </div>
+
+    <div class="stat">
+      <span>Presencia</span>
+      <div class="track"><div class="fill" id="b-presence"></div></div>
+      <span id="v-presence"></span>
+    </div>
+  
   </section>
+
   <section class="room">
     <div class="bubble" id="bubble" role="status"></div>
     <svg id="pet" viewBox="0 0 200 200" tabindex="0" role="img" aria-label="Tu mascota">
@@ -51,18 +76,21 @@ button:focus-visible,#pet:focus-visible{outline:3px solid #e2a13b;outline-offset
       <path id="mouth" d="" fill="none" stroke="#5a3a1e" stroke-width="4" stroke-linecap="round"/>
     </svg>
   </section>
+
   <section class="actions">
-    <button id="feed">Alimentar</button>
-    <button id="play">Jugar</button>
-    <button id="stay">Acompañar</button>
+    <button id="feed">Alimentar ($10)</button>
+    <button id="play">Jugar ($5)</button>
+    <button id="stay">Acompañar (Gratis)</button>
+    <button id="work" style="background:#4c6559">+15 Monedas</button>
   </section>
 </main>
+
 <script>
 // --- Estado y memoria (Fase 2: reemplazar localStorage por el backend en Python) ---
 const KEY = "mascota_v1";
 const $ = id => document.getElementById(id);
 const clamp = v => Math.max(0, Math.min(100, v));
-let s = { food: 70, fun: 70, presence: 70, visits: [], last: Date.now() };
+let s = { food: 70, fun: 70, presence: 70, coins: 50, visits: [], last: Date.now() };
 try { Object.assign(s, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
 
 const MOODS = {
@@ -97,22 +125,42 @@ function render() {
     $("b-" + k).style.width = v + "%";
     $("b-" + k).classList.toggle("low", v < 30);
     $("v-" + k).textContent = v;
+    $("v-coins").textContent = "🪙 " + s.coins;
   }
   const m = MOODS[mood()];
   $("mouth").setAttribute("d", m.mouth);
   $("brow").setAttribute("d", m.brow);
   localStorage.setItem(KEY, JSON.stringify({ ...s, last: Date.now() }));
 }
-function act(evento, changes) {
+
+function act(evento, changes, costo = 0) {
+
+  if (s.coins < costo) {
+    $("bubble").textContent = "¡No tienes suficientes monedas! 🪙";
+    return;
+  }
+  s.coins -= costo;
+
   for (const k in changes) s[k] = clamp(s[k] + changes[k]);
   s.presence = clamp(s.presence + 4); // cada interacción cuenta como presencia
-  $("pet").classList.remove("bounce"); void $("pet").offsetWidth; $("pet").classList.add("bounce");
-  render(); say(evento);
+  $("pet").classList.remove("bounce"); 
+  void $("pet").offsetWidth; 
+  $("pet").classList.add("bounce");
+  render(); 
+  say(evento);
 }
-$("feed").onclick = () => act("feed", { food: 25 });
-$("play").onclick = () => act("play", { fun: 25, food: -5 });
-$("stay").onclick = () => act("stay", { presence: 20 });
-$("pet").onclick = () => act("stay", { presence: 3 });
+
+// Botón temporal para ganar dinero
+$("work").onclick = () => {
+  s.coins += 15;
+  render();
+  $("bubble").textContent = "¡Ganaste 15 monedas trabajando!";
+};
+
+$("feed").onclick = () => act("feed", { food: 25 }, 10);
+$("play").onclick = () => act("play", { fun: 25, food: -5 }, 5);
+$("stay").onclick = () => act("stay", { presence: 20 }, 0);
+$("pet").onclick = () => act("stay", { presence: 3 }, 0);
 
 // --- Al abrir: la mascota nota cuánto tiempo estuvo sola ---
 const now = Date.now();

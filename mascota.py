@@ -24,9 +24,14 @@ class Estado:
 @dataclass
 class Mascota:
     nombre: str = "Mascota"
+    monedas: int = 50  # Monedas iniciales
     estado: Estado = field(default_factory=Estado)
     ultima_visita: float = field(default_factory=time)
     historial: list = field(default_factory=list)  # memoria de interacciones (usar en Fase 2 con la IA)
+
+    # Costos de las acciones
+    COSTO_ALIMENTAR = 10
+    COSTO_JUGAR = 5
 
     def animo(self):
         p = self.estado.promedio()
@@ -36,13 +41,22 @@ class Mascota:
         self.historial.append({"evento": evento, "t": time(), "animo": self.animo()})
         self.ultima_visita = time()
 
-    def alimentar(self):
-        self.estado.cambiar(alimentacion=25, presencia=4)
-        self._registrar("alimentar")
+    def alimentar(self) -> bool:
+        if self.monedas >= self.COSTO_ALIMENTAR:
+            self.monedas -= self.COSTO_ALIMENTAR
+            self.estado.cambiar(alimentacion=25, presencia=4)
+            return True
+        return False
 
-    def jugar(self):
-        self.estado.cambiar(diversion=25, alimentacion=-5, presencia=4)
-        self._registrar("jugar")
+    def jugar(self) -> bool:
+        if self.monedas >= self.COSTO_JUGAR:
+            self.monedas -= self.COSTO_JUGAR
+            self.estado.cambiar(diversion=25, alimentacion=-5, presencia=4)
+            return True
+        return False
+
+    def ganar_monedas(self, cantidad: int):
+        self.monedas += cantidad
 
     def acompanar(self):
         self.estado.cambiar(presencia=20)
